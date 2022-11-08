@@ -11,10 +11,12 @@ bool isDigit(String s) {
 }
 
 class Check_page extends StatefulWidget {
-  const Check_page({Key? key}) : super(key: key);
+  int rno;
+  Check_page({Key? key, required this.rno}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _check_page();
+  // ignore: no_logic_in_create_state
+  State<StatefulWidget> createState() => _check_page(rno);
 }
 
 // ignore: camel_case_types
@@ -22,6 +24,10 @@ class _check_page extends State<Check_page> {
   int no = 0;
   String date = "", title = "";
   bool _done = false;
+  int rno;
+
+  _check_page(this.rno);
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   TextEditingController dateController = TextEditingController();
   void _sendError() {
@@ -54,7 +60,7 @@ class _check_page extends State<Check_page> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save(); // Save our form now.
 
-      String api = '/check?title="$title"&no=$no&date="$date"&rno=5';
+      String api = '/check?title="$title"&no=$no&date="$date"&rno=$rno';
       print(server_address + api);
       var url = Uri.parse(server_address + api);
       buildShowDialog(context);

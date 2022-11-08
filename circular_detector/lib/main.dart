@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 
@@ -8,7 +9,7 @@ import 'package:http/http.dart' as HTTP;
 import 'dart:convert' as convert;
 
 import 'check.dart';
-import 'global.dart';
+import 'global.dart' as global;
 
 /*
 void main() {
@@ -78,7 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (result != null) {
       File file = File((result.files.single.path)!);
-      pdf_path = file.toString();
+      pdf_path = file.path;
       name = path.basename(file.path);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Selected file:" + name),
@@ -94,22 +95,62 @@ class _MyHomePageState extends State<MyHomePage> {
         content: Text("uploading file " + name),
         backgroundColor: Colors.green,
       ));
-      buildShowDialog(context);
+      global.buildShowDialog(context);
 
       //upload file to db
-      var uri = Uri.parse(server_address + "/upload");
-      var request = HTTP.MultipartRequest("POST", uri);
-      request.files.add(await HTTP.MultipartFile.fromPath(name, pdf_path));
-      var res = await request.send();
+      var res;
+      int rnum = 0;
+      try {
+        String api = global.server_address + "/upload";
+        var uri = Uri.parse(api);
+        var request = HTTP.MultipartRequest("POST", uri);
+        request.files.add(await HTTP.MultipartFile.fromPath('file', pdf_path));
+        res = await request.send();
+        res.stream.transform(utf8.decoder).listen((value) {
+          print(value);
+        });
+
+        //calculate the rno
+        name = name.replaceAll(" ", "_");
+        print(name);
+        api = global.server_address + "/decodeQR?fname=$name";
+        uri = Uri.parse(api);
+        var response = await HTTP.get(uri);
+        if (response.statusCode == 200) {
+          var jsonResponse =
+              convert.jsonDecode(response.body) as Map<String, dynamic>;
+          rnum = jsonResponse["value"];
+        } else {
+          print("bad response");
+        }
+      } on Exception catch (e) {
+        print(e);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('There was an issue in server'),
+          backgroundColor: Colors.red,
+        ));
+      }
 
       //Delete the file path
       pdf_path = "Select file";
-
-      Navigator.push(
-          context, MaterialPageRoute(builder: (context) => const Check_page()));
+      if (res.statusCode == 200 || res.statusCode == 302 && rnum != 0) {
+        Navigator.pop(context);
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => Check_page(
+                      rno: rnum,
+                    )));
+      } else {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Unable to upload the pdf'),
+          backgroundColor: Colors.red,
+        ));
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Please select a file'),
+        content: Text('Please select a valid file'),
         backgroundColor: Colors.red,
       ));
     }
