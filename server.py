@@ -77,18 +77,23 @@ def generate():
     date = request.args.get("date",None)
     
 
-    if(fname):
+    if(fname or True): #temp
         #generate rno
         rno = circular_gen.gen_rno(title,no,date)
         print("rno generated is ",rno)
 
         cur = con.cursor()
-        cur.execute("Select * from circular Where num = {} AND title = '{}' AND date = '{}' AND rno = {};".format(no,title,date,rno))
-        print(cur.fetchall())
+        q = "Select * from circular Where num = {} AND title = '{}' AND date = '{}' AND rno = {};".format(no,title,date,rno)
+        print(q)
+        cur.execute(q)
         if(cur.rowcount == 0):
+            cur = con.cursor()
             #add the values to db
-            cur.execute("insert into circular(num,date,title,rno) values({},'{}','{}',{});".format(no,date,title,rno))
+            q2 = "INSERT INTO circular(num,date,title,rno) VALUES({},'{}','{}',{});".format(no,date,title,rno)
+            cur.execute(q2)
+            con.commit()
         else:
+            print("error")
             return {"error":"already exists"}
 
         
@@ -106,6 +111,16 @@ def generate():
 @app.route("/test")
 def test():
     return "works"
+
+@app.route("/login")
+def login():
+    key = request.args.get("key",None)
+
+    if(key == "key"): # password of instituion
+        return {"value":True}
+    print(key)
+    return {"value":False}
+
 
 @app.route("/decodeQR")
 def decode():

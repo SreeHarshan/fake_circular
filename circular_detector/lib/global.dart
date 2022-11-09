@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-String server_address = "http://192.168.0.108:8080";
+String server_address = "http://192.168.25.221:8080";
+ValueNotifier login = ValueNotifier(0);
 
 buildShowDialog(BuildContext context) {
   return showDialog(
