@@ -16,12 +16,17 @@ import 'global.dart' as global;
 import 'global.dart';
 import 'login.dart';
 
-/*
-void main() {
+Future<void> main() async {
+  await FlutterDownloader.initialize(
+      debug:
+          true, // optional: set to false to disable printing logs to console (default: true)
+      ignoreSsl:
+          true // option: set to false to disable working with http links (default: false)
+      );
   runApp(const MyApp());
 }
-*/
 
+/*
 Future<void> main() async {
   await FlutterDownloader.initialize(
       debug:
@@ -31,7 +36,7 @@ Future<void> main() async {
       );
   runApp(DevicePreview(builder: (context) => const MyApp()));
 }
-
+*/
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 

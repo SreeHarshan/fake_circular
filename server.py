@@ -102,7 +102,7 @@ def generate():
         circular_gen.add_qr(app.config['UPLOAD_FOLDER']+fname)
     
         # delete uploaded circular
-        os.remove(app.config['UPLOAD_FOLDER']+fname)
+        #os.remove(app.config['UPLOAD_FOLDER']+fname)
 
         return send_from_directory(app.config['UPLOAD_FOLDER'], fname[:-4]+'_output.pdf')
 
@@ -131,7 +131,7 @@ def decode():
         value = qr_read.readpdf(app.config['UPLOAD_FOLDER']+fname)
         
         #delete the pdf 
-        os.remove(app.config['UPLOAD_FOLDER']+fname)
+        #os.remove(app.config['UPLOAD_FOLDER']+fname)
 
         return {"value":value}
 
@@ -144,4 +144,4 @@ def view():
 
 if __name__ == "__main__":
     app.secret_key = 'super secret key'
-    app.run(host = '0.0.0.0',port = 8080)
+    app.run(host = '0.0.0.0',port = 5080)
