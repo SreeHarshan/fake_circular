@@ -1,7 +1,4 @@
 import 'dart:io';
-import 'package:path_provider_ex/path_provider_ex.dart';
-import 'dart:ui';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:open_file/open_file.dart';
@@ -10,6 +7,7 @@ import 'package:http/http.dart' as HTTP;
 import 'dart:convert' as convert;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'global.dart';
 
@@ -28,27 +26,9 @@ class _createpage extends State<Create> {
   void initState() {
     super.initState();
 
-    initPlatformState();
   }
 
-  late String path;
-  Future<void> initPlatformState() async {
-    _setPath();
-    if (!mounted) return;
-  }
-
-  void _setPath() async {
-    Directory _path = await getApplicationDocumentsDirectory();
-    String _localPath = _path.path + Platform.pathSeparator + 'Download';
-    final savedDir = Directory(_localPath);
-    bool hasExisted = await savedDir.exists();
-    if (!hasExisted) {
-      savedDir.create();
-    }
-    path = _localPath;
-  }
-
-  String name;
+    String name;
   _createpage(this.name);
   int no = 0;
   String date = "", title = "";
@@ -73,66 +53,28 @@ class _createpage extends State<Create> {
     }
   }
 
-  Future<String> downloadFile(String url, String fileName, String dir) async {
-    HttpClient httpClient = HttpClient();
-    File file;
-    String filePath = '';
-    String myUrl = '';
-
-    try {
-      myUrl = url + '/' + fileName;
-      var request = await httpClient.getUrl(Uri.parse(myUrl));
-      var response = await request.close();
-      if (response.statusCode == 200) {
-        var bytes = await consolidateHttpClientResponseBytes(response);
-        filePath = '$dir/$fileName';
-        file = File(filePath);
-        await file.writeAsBytes(bytes);
-      } else
-        filePath = 'Error code: ' + response.statusCode.toString();
-    } catch (ex) {
-      print(ex);
-      filePath = 'Can not fetch url';
-    }
-    print(filePath);
-    return filePath;
-  }
-
-  Future<void> _submit() async {
+    Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save(); // Save our form now.
       name = name.replaceAll(" ", "_");
       String api = '/generateQR?title=$title&no=$no&date=$date&fname=$name';
       print(server_address + api);
+
       var url = Uri.parse(server_address + api);
       buildShowDialog(context);
 
+           
       try {
         var response = await HTTP.get(url);
         if (response.statusCode == 200) {
           //display pdf
-          String pdf_link = "";
-          pdf_link = response.body;
-          final dir = await getApplicationDocumentsDirectory();
-          var _localPath = dir.path + name;
-          final savedDir = Directory(_localPath);
-          List<StorageInfo> storageInfo = await PathProviderEx.getStorageInfo();
-          path = storageInfo[0].rootDir;
-          print(path);
-          await savedDir.create(recursive: true).then((value) async {
-            String? _taskid = await FlutterDownloader.enqueue(
-              url: pdf_link,
-              fileName: name,
-              savedDir: path,
-              showNotification: true,
-              openFileFromNotification: true,
-            );
-            print(_taskid);
-
-            var value = await downloadFile(server_address + api, name, path);
-                       OpenFile.open(value);
-          });
-        } else {
+          var jsonResponse =
+            convert.jsonDecode(response.body) as Map<String, dynamic>;
+          var pdf_path = jsonResponse["path"];
+          var pdf_link = server_address + '/view?fname=$pdf_path' ;
+          print(pdf_link);
+          launchUrl(Uri.parse(pdf_link),mode: LaunchMode.externalApplication);
+                  } else {
           print("bad response");
         }
       }
@@ -145,10 +87,12 @@ class _createpage extends State<Create> {
         ));
       }
       Navigator.pop(context);
-      //Display the pdf
-    }
-  }
 
+      //Display the pdf
+      //open url in browser instead of opening it
+      launchUrl(url,mode: LaunchMode.externalApplication);
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(

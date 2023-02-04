@@ -68,7 +68,7 @@ def upload_file():
       <input type=submit value=Upload>
     </form>
     '''
-
+#generate the pdf and send pdf link 
 @app.route("/generateQR")
 def generate():
     fname = request.args.get("fname",None)
@@ -104,13 +104,18 @@ def generate():
         # delete uploaded circular
         #os.remove(app.config['UPLOAD_FOLDER']+fname)
 
-        return send_from_directory(app.config['UPLOAD_FOLDER'], fname[:-4]+'_output.pdf')
+        return {"path": fname[:-4]+'_output.pdf',"error":"false"}
 
-    return {"error":"file doesn't exist"}
-       
+    return {"error":"true"}
+      
+@app.route("/view")
+def view():
+    path = request.args.get("fname",None)
+    return send_from_directory(app.config['UPLOAD_FOLDER'], path)
+
 @app.route("/test")
 def test():
-    return "works"
+    return send_from_directory(app.config['UPLOAD_FOLDER'], 'Document_4_output.pdf')
 
 @app.route("/login")
 def login():
@@ -138,8 +143,8 @@ def decode():
     return {"value":None}
 
 @app.route("/viewpdf")
-def view():
-    return send_from_directory(app.config['UPLOAD_FOLDER'], 'output.pdf')
+def view_pdf():
+    return send_from_directory(app.config['upload_folder'], 'output.pdf')
 
 
 if __name__ == "__main__":
