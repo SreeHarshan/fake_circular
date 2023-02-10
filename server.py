@@ -4,7 +4,7 @@ import os
 
 import psycopg2 as psy
 
-import qr_read,circular_gen
+import qr_read,circular_gen,pdf_text_read,text_shrink
 
 # upload folder
 UPLOAD_FOLDER = "./server_pdf/"
@@ -77,7 +77,7 @@ def generate():
     date = request.args.get("date",None)
     
 
-    if(fname or True): #temp
+    if(fname):  
         #generate rno
         rno = circular_gen.gen_rno(title,no,date)
         print("rno generated is ",rno)
@@ -148,5 +148,6 @@ def view_pdf():
 
 
 if __name__ == "__main__":
+    text_shrink.init()
     app.secret_key = 'super secret key'
     app.run(host = '0.0.0.0',port = 5080)

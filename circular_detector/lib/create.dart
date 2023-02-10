@@ -87,10 +87,6 @@ class _createpage extends State<Create> {
         ));
       }
       Navigator.pop(context);
-
-      //Display the pdf
-      //open url in browser instead of opening it
-      launchUrl(url,mode: LaunchMode.externalApplication);
   }
 }
   @override

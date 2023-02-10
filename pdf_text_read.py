@@ -20,4 +20,3 @@ def read_text(pdf_path):
     # closing the pdf file object
     pdfFileObj.close()
 
-read_text("./server_pdf/Document_4.pdf")
