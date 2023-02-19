@@ -11,21 +11,22 @@ bool isDigit(String s) {
 }
 
 class Check_page extends StatefulWidget {
-  int rno;
-  Check_page({Key? key, required this.rno}) : super(key: key);
+  String qrcontent, pdfcontent;
+  Check_page({Key? key, required this.qrcontent, required this.pdfcontent})
+      : super(key: key);
 
   @override
   // ignore: no_logic_in_create_state
-  State<StatefulWidget> createState() => _check_page(rno);
+  State<StatefulWidget> createState() => _check_page(qrcontent, pdfcontent);
 }
 
 // ignore: camel_case_types
 class _check_page extends State<Check_page> {
-  int rno;
+  String qrcontent, pdfcontent;
 
   int no = 0;
   late String title, date;
-  _check_page(this.rno);
+  _check_page(this.qrcontent, this.pdfcontent);
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   TextEditingController dateController = TextEditingController();
@@ -51,32 +52,41 @@ class _check_page extends State<Check_page> {
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save(); // Save our form now.
-
-      String api = '/check?title=$title&no=$no&date=$date&rno=$rno';
-      print(server_address + api);
-      var url = Uri.parse(server_address + api);
-      buildShowDialog(context);
-
       bool real = false;
-      try {
-        var response = await HTTP.get(url);
-        if (response.statusCode == 200) {
-          var jsonResponse =
-              convert.jsonDecode(response.body) as Map<String, dynamic>;
-          print(jsonResponse);
 
-          real = jsonResponse["value"];
-        } else {
-          print("bad response");
+      if (qrcontent == pdfcontent) {
+        String api = '/check?title=$title&no=$no&date=$date&content=$qrcontent';
+        print(server_address + api);
+        var url = Uri.parse(server_address + api);
+        buildShowDialog(context);
+
+        try {
+          var response = await HTTP.get(url);
+          if (response.statusCode == 200) {
+            var jsonResponse =
+                convert.jsonDecode(response.body) as Map<String, dynamic>;
+            real = jsonResponse["value"];
+            print("Circular is ");
+            if (real)
+              print("Original");
+            else
+              print("Fake");
+          } else {
+            print("bad response");
+          }
         }
-      }
-      // ignore: empty_catches
-      on Exception catch (e) {
-        print(e);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('There was an issue in server'),
-          backgroundColor: Colors.red,
-        ));
+        // ignore: empty_catches
+        on Exception catch (e) {
+          print(e);
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('There was an issue in server'),
+            backgroundColor: Colors.red,
+          ));
+        }
+      } else {
+        print("qr content is not equal");
+        print(qrcontent);
+        print(pdfcontent);
       }
       Navigator.pop(context);
       //Switch to results page

@@ -168,19 +168,44 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _qr() async {
     //upload file to db
     int res = 0;
-    int rnum = 0;
+    String qrcontent = "";
+    String pdfcontent = "";
+
     try {
       res = await _upload();
       //calculate the rno
       name = name.replaceAll(" ", "_");
       print(name);
       String api = global.server_address + "/decodeQR?fname=$name";
+      String api2 = global.server_address + "/readpdf?fname=$name";
+      print(api);
+      print(api2);
       var uri = Uri.parse(api);
+      var uri2 = Uri.parse(api2);
       var response = await HTTP.get(uri);
+      var response2 = await HTTP.get(uri2);
       if (response.statusCode == 200) {
         var jsonResponse =
             convert.jsonDecode(response.body) as Map<String, dynamic>;
-        rnum = int.parse(jsonResponse["value"]);
+        qrcontent = jsonResponse["value"];
+        print("qr content is " + qrcontent);
+      } else {
+        print("bad response");
+      }
+      if (response2.statusCode == 200) {
+        var jsonResponse =
+            convert.jsonDecode(response2.body) as Map<String, dynamic>;
+        if (jsonResponse["value"]) {
+          pdfcontent = jsonResponse["content"];
+          print("pdf content is " + pdfcontent);
+        } else {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('There was an issue reading the pdf'),
+            backgroundColor: Colors.red,
+          ));
+          return;
+        }
       } else {
         print("bad response");
       }
@@ -193,14 +218,13 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     //Delete the file path
-    if (res == 200 || res == 302 && rnum != 0) {
+    if (res == 200 || res == 302) {
       Navigator.pop(context);
       Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => Check_page(
-                    rno: rnum,
-                  )));
+              builder: (context) =>
+                  Check_page(qrcontent: qrcontent, pdfcontent: pdfcontent)));
     } else {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

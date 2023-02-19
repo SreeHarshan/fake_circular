@@ -4,7 +4,7 @@ import os
 
 import psycopg2 as psy
 
-import qr_read,circular_gen,pdf_text_read,text_shrink
+import qr_read,circular_gen,pdf_text_read
 
 # upload folder
 UPLOAD_FOLDER = "./server_pdf/"
@@ -12,6 +12,7 @@ ALLOWED_EXTENSIONS = { 'pdf' }
 
 #db connection
 con = psy.connect("postgres://wrgwkwjx:SD6vNeZjEMxeBaTLcHmnOmAZklWKWzBk@tiny.db.elephantsql.com/wrgwkwjx")
+
 # flask server
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -21,10 +22,10 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def check():
     args = request.args.to_dict()
 
-    if(args['title'] and args['no'] and args['date']):
+    if(args['title'] and args['no'] and args['date'] and args['content']):
         # check if it's in db
         cur = con.cursor()
-        cur.execute("Select * from circular where num = {} AND title = '{}' AND date = '{}' AND rno = {}".format(args['no'],args['title'],args['date'],args['rno']))
+        cur.execute("Select * from circular where num = {} AND title = '{}' AND date = '{}' AND content = '{}'".format(args['no'],args['title'],args['date'],args['content']))
         val = cur.fetchone()
 
         if cur.rowcount!=0: 
@@ -52,7 +53,7 @@ def upload_file():
         # submit an empty part without filename
         if file.filename == '':
             flash('No selected file')
-            return {"value2":False}
+            return {"value":False}
             #return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
@@ -75,47 +76,42 @@ def generate():
     no = request.args.get("no",None)
     title = request.args.get("title",None)
     date = request.args.get("date",None)
-    
 
     if(fname):  
-        #generate rno
-        rno = circular_gen.gen_rno(title,no,date)
-        print("rno generated is ",rno)
+        # get the content of pdf
+        content = pdf_text_read.read_text(app.config['UPLOAD_FOLDER']+fname)
+
+        #shrink content of the text
+        text_shrinked = circular_gen.gen_rno(content)
 
         cur = con.cursor()
-        q = "Select * from circular Where num = {} AND title = '{}' AND date = '{}' AND rno = {};".format(no,title,date,rno)
+        q = "Select * from circular Where num = {} AND title = '{}' AND date = '{}' AND content = '{}';".format(no,title,date,text_shrinked)
         print(q)
         cur.execute(q)
         if(cur.rowcount == 0):
             cur = con.cursor()
             #add the values to db
-            q2 = "INSERT INTO circular(num,date,title,rno) VALUES({},'{}','{}',{});".format(no,date,title,rno)
+            q2 = "INSERT INTO circular(num,date,title,content) VALUES({},'{}','{}','{}');".format(no,date,title,text_shrinked)
             cur.execute(q2)
             con.commit()
         else:
-            print("error")
-            return {"error":"already exists"}
+            return {"error":"already exists","value":False}
 
-        
         #generate qr 
-        qr = circular_gen.gen_qr(rno,app.config['UPLOAD_FOLDER']+fname[:-4]+"_qr.jpg")
+        qr = circular_gen.gen_qr(text_shrinked,app.config['UPLOAD_FOLDER']+fname[:-4]+"_qr.jpg")
         circular_gen.add_qr(app.config['UPLOAD_FOLDER']+fname)
     
         # delete uploaded circular
         #os.remove(app.config['UPLOAD_FOLDER']+fname)
 
-        return {"path": fname[:-4]+'_output.pdf',"error":"false"}
+        return {"path": fname[:-4]+'_output.pdf',"value":True}
 
-    return {"error":"true"}
+    return {"error":"api doesn't exist","value":False}
       
 @app.route("/view")
 def view():
     path = request.args.get("fname",None)
     return send_from_directory(app.config['UPLOAD_FOLDER'], path)
-
-@app.route("/test")
-def test():
-    return send_from_directory(app.config['UPLOAD_FOLDER'], 'Document_4_output.pdf')
 
 @app.route("/login")
 def login():
@@ -146,6 +142,23 @@ def decode():
 def view_pdf():
     return send_from_directory(app.config['upload_folder'], 'output.pdf')
 
+
+# Read pdf contents
+@app.route("/readpdf")
+def read_pdf():
+    fname = request.args.get("fname",None)
+
+    if(fname):
+
+        # read the content 
+        content = pdf_text_read.read_text(app.config['UPLOAD_FOLDER']+fname)
+
+        #shrink content of the text
+        text_shrinked = circular_gen.gen_rno(content)
+
+        return {"content":text_shrinked,"value":True}
+
+    return {"value":False,"content":None}
 
 if __name__ == "__main__":
     text_shrink.init()

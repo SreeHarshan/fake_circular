@@ -3,25 +3,17 @@ from PIL import Image
 import os
 
 import pdf_conv as pdf
+import text_shrink as shrinker
 
-def gen_rno(title,no,date):
-    
-    t_list = [ ord(i) for i in title]
-    d_list = [ ord(i) for i in date]
-    s_value = sum(t_list)+sum(d_list)+int(no)
-    
-    #seed the random
-    random.seed(s_value)
-    rno = 0
-    #generate 10 digit random number
-    for i in range(10):
-        rno += random.randint(0,9) * 10 ** i
-
-    return rno
-
-def gen_qr(no,img_name):
-    qr_img = qrcode.make(str(no))
-    qr_img.save(img_name)
+def gen_rno(content):
+    return shrinker.shrink(content)
+   
+def gen_qr(text,img_name):
+    qr = qrcode.QRCode(version = 1,box_size = 5,border =1)
+    qr.add_data(text)
+    qr.make(fit=True)
+    img = qr.make_image()
+    img.save(img_name)
 
 def add_qr(pdf_path):
     pdf.conv(pdf_path)     
